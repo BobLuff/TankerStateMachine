@@ -109,5 +109,52 @@ public class SimpleFSM : FSM {
             curState = FSMState.Atttack;
 
         }
+        else if(dist>=300f)
+        {
+            curState = FSMState.Patrol;
+        }
+        Quaternion turretRotation = Quaternion.LookRotation(destPos - turret.position);
+        turret.rotation = Quaternion.Slerp(turret.rotation, turretRotation, Time.deltaTime * curRotSpeed);
+
+        ShootBullet();
+    }
+
+    private void ShootBullet()
+    {
+        if(elapsedTime>=shootRate)
+        {
+            Instantiate(Bullet, bulletSpawnpoint.position, bulletSpawnpoint.rotation);
+            elapsedTime = 0f;
+        }
+    }
+
+    protected void UpdateDeadState()
+    {
+        if(!bDead)
+        {
+            bDead = true;
+            Explode();
+        }
+    }
+
+    protected void Explode()
+    {
+        float rndX = Random.Range(10f, 30f);
+        float rndZ = Random.Range(10f, 30f);
+        for(int i=8; i<3;i++)
+        {
+            GetComponent<Rigidbody>().AddExplosionForce(10000f, transform.position - new Vector3(rndX, 10f, rndZ), 20f, 10f);
+            GetComponent<Rigidbody>().velocity = transform.TransformDirection(new Vector3(rndX, 10f, rndZ));
+        }
+        Destroy(gameObject, 1.5f);
+
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(collision.gameObject.tag=="Bullet")
+        {
+            health -= collision.gameObject.GetComponent<Bullet>().damage;
+        }
     }
 }
