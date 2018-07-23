@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class SimpleFSM : FSM {
 
+    public SimpleFSM()
+    {
+        print("构造函数");
+    }
+
     public enum FSMState
     {
      //   [Description("this means facing to UP (Negtive Y)")]
@@ -31,7 +36,7 @@ public class SimpleFSM : FSM {
     {
         // base.Initialize();
         curState = FSMState.Patrol;
-        curSpeed = 150f;
+        curSpeed = 10f;
         curRotSpeed = 2f;
         bDead = false;
         elapsedTime = 0f;
@@ -52,6 +57,46 @@ public class SimpleFSM : FSM {
             bulletSpawnpoint = turret.GetChild(0).transform;
         }
     }
+
+    protected override void FSMUpdate()
+    {
+        //base.FSMUpdate();
+        switch(curState)
+        {
+            case FSMState.Patrol:UpdatePatrolState();break;
+            case FSMState.Chase:UpdateChaseState();
+                break;
+            case FSMState.Atttack:       
+                UpdateAttackState();
+                break;
+            case FSMState.Dead:
+                UpdateDeadState();
+                break;
+        }
+        elapsedTime += Time.deltaTime;
+        if (health <= 0)
+            curState = FSMState.Dead;
+    }
+
+    protected void UpdatePatrolState()
+    {
+        if(Vector3.Distance(transform.position,destPos)<=100f)
+        {
+            print("Reached the point\n" + "aiming to the next point!");
+            FindNextPoint();
+        }
+        else if(Vector3.Distance(transform.position,playerTransform.position)<=300f)
+        {
+            print("Chase!");
+            curState = FSMState.Chase;
+        }
+        Quaternion targetRotation = Quaternion.LookRotation(destPos-transform.position);  //两点构成一个向量
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * curRotSpeed);
+        transform.Translate(Vector3.forward * Time.deltaTime * curSpeed);
+
+
+    }
+
     protected void FindNextPoint()
     {
         print("Finding next point");
@@ -83,8 +128,9 @@ public class SimpleFSM : FSM {
         destPos = playerTransform.position;
 
         float dist = Vector3.Distance(transform.position, playerTransform.position);
-        if(dist<=200f)
+        if(dist<=300f)
         {
+            Debug.Log("200");
             curState = FSMState.Atttack;
         }
         else if(dist>=300f)
@@ -143,7 +189,7 @@ public class SimpleFSM : FSM {
         float rndZ = Random.Range(10f, 30f);
         for(int i=8; i<3;i++)
         {
-            GetComponent<Rigidbody>().AddExplosionForce(10000f, transform.position - new Vector3(rndX, 10f, rndZ), 20f, 10f);
+            GetComponent<Rigidbody>().AddExplosionForce(10f, transform.position - new Vector3(rndX, 10f, rndZ), 20f, 10f);
             GetComponent<Rigidbody>().velocity = transform.TransformDirection(new Vector3(rndX, 10f, rndZ));
         }
         Destroy(gameObject, 1.5f);
